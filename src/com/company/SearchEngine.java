@@ -3,50 +3,60 @@ package com.company;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class SearchEngine {
     private TFIDECalculator calculator;
     private DocumentHandler dh;
+    private Map<String, List<SearchResult>> invertedIndex = new HashMap<>();
 
-    public SearchEngine() {
-        this.calculator = new TFIDECalculator();
-        this.dh = new DocumentHandler();
+    public SearchEngine(TFIDECalculator calculator, DocumentHandler dh) {
+        this.calculator = calculator;
+        this.dh = dh;
     }
 
-    public String getSearchTerm(){
-        BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 
-        System.out.println("Word to search for: ");
-        String searchTerm = null;
-        try {
-            searchTerm = input.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void buildInvertedIndex(){
+        List<List<String>> docs = dh.getDocuments();
+        int i = 1;
+        for(List<String> doc: docs){
+            String id = "Document " + i++;
+            for(String term : doc){
+                double score = calculator.tfIdf(doc, docs, term);
+                SearchResult sResult = new SearchResult(id, score);
+
+                if(invertedIndex.containsKey(term)){
+                    List<SearchResult> result = invertedIndex.get(term);
+                    if(result.contains(sResult)){
+                        System.out.println("balla balla ballla");
+                    }
+                    result.add(sResult);
+
+                } else{
+                    List<SearchResult> result = new ArrayList<>();
+                    result.add(sResult);
+                    invertedIndex.put(term, result);
+                }
+            }
         }
-        return searchTerm;
+
+        invertedIndex
+                .keySet()
+                .stream()
+                .forEach(term -> {
+                    Collections.sort(invertedIndex.get(term));
+                });
+
     }
 
     public List<SearchResult> getSearchResults(String searchTerm){
-        List<List<String>> documents = dh.getDocuments();
-
-        List<SearchResult> result = new ArrayList<>();
-        int n = 1;
-
-        for (List<String> doc : documents) {
-            result.add(new SearchResult("Dokument " + n++, calculator.tfIdf(doc, documents, searchTerm)));
-        }
-        return result;
+        return invertedIndex.get(searchTerm);
     }
 
     public void printSearchResults(List<SearchResult> result){
-        Collections.sort(result);
         for (SearchResult searchResult : result) {
-            if (searchResult.getScore() > 0) {
                 System.out.println(searchResult.toString());
-            }
+
         }
     }
 }

@@ -30,7 +30,7 @@ public class SearchResult implements Comparable<SearchResult>{
 
    @Override
    public String toString() {
-      return getName();
+      return getName() + " " + getScore();
    }
 
 
